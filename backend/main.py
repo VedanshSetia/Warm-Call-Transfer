@@ -2,10 +2,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
 import os
 from dotenv import load_dotenv
 import jwt
 import time
+import requests
 
 load_dotenv()
 
@@ -36,6 +38,7 @@ class TransferRequest(BaseModel):
     to_identity: str
     to_name: str = None
     to_metadata: str = None
+    summary: str = ""
 
 # --- Endpoints ---
 @app.get("/")
@@ -58,8 +61,10 @@ def get_token(req: TokenRequest):
     token = jwt.encode(payload, LIVEKIT_API_SECRET, algorithm="HS256")
     return {"token": token}
 
+from fastapi import Request
+
 @app.post("/transfer")
-def transfer(req: TransferRequest):
+async def transfer(req: TransferRequest, request: Request):
     now = int(time.time())
     payload = {
         "iss": LIVEKIT_API_KEY,
@@ -76,5 +81,64 @@ def transfer(req: TransferRequest):
     if req.to_metadata:
         payload["metadata"] = req.to_metadata
     token = jwt.encode(payload, LIVEKIT_API_SECRET, algorithm="HS256")
-    return {"token": token, "room": req.room, "to_identity": req.to_identity}
+
+    # --- Gemini LLM summary generation ---
+    summary = req.summary
+    if not summary or summary.strip().lower() == "auto":
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
+        if gemini_api_key:
+            try:
+                gemini_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={gemini_api_key}"
+                # Try to get transcript from request body if not in req
+                transcript = getattr(req, 'transcript', None)
+                if not transcript and request is not None:
+                    try:
+                        body = await request.json()
+                        if body and 'transcript' in body:
+                            transcript = body['transcript']
+                    except Exception:
+                        pass
+                prompt = f"You are a helpful call center agent. Summarize the following call context for the next agent. Call context for transfer from {req.from_identity} to {req.to_identity}."
+                if transcript:
+                    print("[Gemini] Using transcript for summary:", transcript)
+                    prompt += f"\nTranscript:\n{transcript}"
+                else:
+                    print("[Gemini] No transcript provided, using default context.")
+                print("[Gemini] Prompt:", prompt)
+                resp = requests.post(
+                    gemini_url,
+                    headers={"Content-Type": "application/json"},
+                    json={
+                        "contents": [
+                            {"parts": [{"text": prompt}]}
+                        ]
+                    },
+                    timeout=30
+                )
+                print("[Gemini] Response status:", resp.status_code)
+                print("[Gemini] Response text:", resp.text)
+                if resp.ok:
+                    gemini_data = resp.json()
+                    summary = gemini_data["candidates"][0]["content"]["parts"][0]["text"]
+                else:
+                    summary = "[Gemini summary unavailable]"
+            except Exception as e:
+                print("[Gemini] Exception:", e)
+                summary = f"[Gemini LLM error: {e}]"
+        else:
+            print("[Gemini] GEMINI_API_KEY not set!")
+            summary = "[No summary provided]"
+
+    # --- TTS synthesis (placeholder) ---
+    # Example: Use a TTS API to synthesize the summary to audio and return a URL
+    # For demo, just return a fake URL
+    audio_url = f"https://example.com/tts/{req.room}_{req.to_identity}.mp3"
+
+    return {
+        "token": token,
+        "room": req.room,
+        "to_identity": req.to_identity,
+        "summary": summary,
+        "audio_url": audio_url,
+    }
 
