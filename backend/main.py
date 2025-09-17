@@ -15,6 +15,10 @@ LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
 LIVEKIT_HOST = os.getenv("LIVEKIT_HOST")
 
+
+# In-memory summary store: {room: summary}
+summary_store = {}
+
 app = FastAPI()
 
 # Allow all origins for development (change to specific origins for production)
@@ -134,6 +138,11 @@ async def transfer(req: TransferRequest, request: Request):
     # For demo, just return a fake URL
     audio_url = f"https://example.com/tts/{req.room}_{req.to_identity}.mp3"
 
+
+    # Store summary for this room
+    if req.room:
+        summary_store[req.room] = summary
+
     return {
         "token": token,
         "room": req.room,
@@ -141,4 +150,14 @@ async def transfer(req: TransferRequest, request: Request):
         "summary": summary,
         "audio_url": audio_url,
     }
+
+# Endpoint to get the latest summary for a room
+from fastapi.responses import JSONResponse
+@app.get("/get_summary/{room}")
+def get_summary(room: str):
+    summary = summary_store.get(room)
+    if summary:
+        return {"room": room, "summary": summary}
+    else:
+        return JSONResponse(status_code=404, content={"detail": "No summary found for this room."})
 
