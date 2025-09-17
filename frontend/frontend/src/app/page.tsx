@@ -58,9 +58,8 @@ export default function Home() {
   const lastSummaryRef = useRef<string>("");
   const [isPaused, setIsPaused] = useState(false);
 
-  // Speech recognition
-  const recognitionRef = useRef<any>(null);
-  const [isRecognizing, setIsRecognizing] = useState(false);
+  // ...existing code...
+  // ...existing code...
 
   // Audio elements for remote participants
   const audioElementsRef = useRef<{ [id: string]: HTMLAudioElement }>({});
@@ -184,32 +183,7 @@ export default function Home() {
         alert("Could not access microphone: " + (e as any).message);
       }
 
-      // Start speech recognition for live transcription
-      if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
-        recognition.onresult = (event: any) => {
-          let transcript = "";
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
-          }
-          setChatInput(transcript.trim());
-        };
-        recognition.onerror = (event: any) => {
-          // Optionally handle errors
-        };
-        recognition.onend = () => {
-          setIsRecognizing(false);
-        };
-        recognition.start();
-        recognitionRef.current = recognition;
-        setIsRecognizing(true);
-      } else {
-        alert("Speech recognition is not supported in this browser.");
-      }
+  // ...existing code...
 
       // Add yourself
       setParticipants([newRoom.localParticipant.identity]);
@@ -364,11 +338,7 @@ export default function Home() {
   }, [room, lastSummary, identity]);
 
   function leaveRoom() {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-      setIsRecognizing(false);
-    }
+    // ...existing code...
     if (room) {
       // Remove all remote audio elements
       Object.values(audioElementsRef.current).forEach((el) => el.remove());
@@ -382,63 +352,68 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-12">
-      <h1 className="text-3xl font-bold mb-4">Warm Transfer Demo</h1>
-      <div className="mb-6">
-        <input
-          placeholder="Room name"
-          value={roomName}
-          onChange={(e) => setRoomName(e.target.value)}
-          className="p-2 border rounded mr-2"
-          disabled={!!room}
-        />
-        <input
-          placeholder="Identity"
-          value={identity}
-          onChange={(e) => setIdentity(e.target.value)}
-          className="p-2 border rounded mr-2"
-          disabled={!!room}
-        />
-        {!room ? (
-          <button
-            onClick={joinRoom}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Join
-          </button>
-        ) : (
-          <button
-            onClick={leaveRoom}
-            className="bg-red-600 text-white px-4 py-2 rounded"
-          >
-            Leave
-          </button>
-        )}
-      </div>
-      <p>Status: {status}</p>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-300 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900 font-sans text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+      <style>{`
+        html, body { font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: transparent; }
+        ::selection { background: #a5b4fc; color: #fff; }
+      `}</style>
+      <div className="w-full max-w-2xl p-8 rounded-3xl shadow-xl bg-white/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 mt-8 mb-8">
+        <h1 className="text-4xl font-extrabold mb-8 text-center tracking-tight text-indigo-600 dark:text-indigo-400 drop-shadow">Warm Transfer Demo</h1>
+        <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <input
+            placeholder="Room name"
+            value={roomName}
+            onChange={(e) => setRoomName(e.target.value)}
+            className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-lg transition-all w-48"
+            disabled={!!room}
+          />
+          <input
+            placeholder="Identity"
+            value={identity}
+            onChange={(e) => setIdentity(e.target.value)}
+            className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-lg transition-all w-48"
+            disabled={!!room}
+          />
+          {!room ? (
+            <button
+              onClick={joinRoom}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition-all text-lg"
+            >
+              Join
+            </button>
+          ) : (
+            <button
+              onClick={leaveRoom}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold shadow transition-all text-lg"
+            >
+              Leave
+            </button>
+          )}
+        </div>
+        <div className="text-center text-zinc-500 text-sm mb-8">Status: <span className="font-semibold text-indigo-500 dark:text-indigo-300">{status}</span></div>
 
       {/* Transfer UI: Only show when connected */}
       {room && (
-        <div className="mb-6 w-full max-w-md">
-          <h2 className="text-xl font-semibold mb-2">Warm Transfer</h2>
-          <div className="flex flex-col gap-2">
+        <section className="mb-10 w-full max-w-2xl bg-white/70 dark:bg-zinc-800/80 rounded-2xl shadow-lg p-6 border border-zinc-100 dark:border-zinc-800">
+          <h2 className="text-2xl font-bold mb-4 text-indigo-600 dark:text-indigo-300 tracking-tight">Transfer & Summary</h2>
+          <div className="flex flex-col gap-4 mb-4">
             <input
               type="text"
               placeholder="Target agent/bot identity"
               value={transferTarget}
               onChange={(e) => setTransferTarget(e.target.value)}
-              className="p-2 border rounded"
+              className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-lg transition-all w-full"
             />
             <textarea
               placeholder="Call summary/context to send to Agent B (leave blank or type 'auto' for LLM)"
               value={transferSummary}
               onChange={(e) => setTransferSummary(e.target.value)}
-              className="p-2 border rounded"
+              className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none text-lg transition-all w-full"
               rows={3}
             />
             <button
               onClick={handleTransfer}
-              className="bg-green-600 text-white px-4 py-2 rounded"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition-all text-lg"
               disabled={!transferTarget}
             >
               Transfer
@@ -448,57 +423,60 @@ export default function Home() {
             <div className="mt-4 flex flex-col items-center">
               <button
                 onClick={leaveRoom}
-                className="bg-red-600 text-white px-4 py-2 rounded font-bold shadow"
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow transition-all text-lg"
                 type="button"
               >
                 Confirm Transfer & Leave
               </button>
-              <div className="text-xs text-gray-500 mt-1">A new agent has joined. Click to complete the transfer and leave the room.</div>
+              <div className="text-xs text-zinc-400 mt-1">A new agent has joined. Click to complete the transfer and leave the room.</div>
             </div>
           )}
           {transferResult && (
-            <div className="text-xs text-gray-700 break-all mt-2">
+            <div className="text-xs text-zinc-700 dark:text-zinc-200 break-all mt-2">
               <strong>Transfer Token:</strong> {transferResult}
             </div>
           )}
           {transferSummaryResult && (
-            <div className="text-xs text-blue-700 mt-2">
+            <div className="text-xs text-indigo-500 dark:text-indigo-300 mt-2">
               <strong>Summary sent to Agent B:</strong> {transferSummaryResult}
             </div>
           )}
           {transferAudioUrl && (
-            <div className="text-xs text-green-700 mt-2">
+            <div className="text-xs text-green-600 dark:text-green-400 mt-2">
               <strong>Audio (TTS):</strong> <a href={transferAudioUrl} target="_blank" rel="noopener noreferrer">Play Audio</a>
             </div>
           )}
           {transferError && (
-            <div className="text-xs text-red-600 mt-2">{transferError}</div>
+            <div className="text-xs text-red-500 dark:text-red-400 mt-2">{transferError}</div>
           )}
-        </div>
+        </section>
       )}
 
       {/* Notes UI: Only show when connected */}
       {room && (
-        <div className="mb-6 w-full max-w-md bg-black rounded-lg shadow p-4 border border-gray-800">
-          <h2 className="text-xl font-semibold mb-3 text-white">Notes</h2>
-          <div className="h-40 overflow-y-auto bg-zinc-900 border border-gray-800 rounded-lg p-3 mb-3" style={{ minHeight: 120 }}>
-            {messages.length === 0 && <div className="text-gray-500">No notes yet</div>}
+        <section className="mb-10 w-full max-w-2xl bg-white/70 dark:bg-zinc-800/80 rounded-2xl shadow-lg p-6 border border-zinc-100 dark:border-zinc-800">
+          <h2 className="text-2xl font-bold mb-4 text-indigo-600 dark:text-indigo-300 tracking-tight">Notes</h2>
+          <div className="h-48 overflow-y-auto bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 mb-4 transition-all" style={{ minHeight: 120 }}>
+            {messages.length === 0 && <div className="text-zinc-400 italic">No notes yet</div>}
             {messages.map((m, i) => (
-              <div key={i} className="mb-1"><span className="font-semibold text-blue-300">{m.sender}:</span> <span className="text-gray-100">{m.text}</span></div>
+              <div key={i} className="mb-2 flex items-start gap-2">
+                <span className="font-semibold text-indigo-500 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900 rounded px-2 py-0.5 text-sm shadow-sm">{m.sender}</span>
+                <span className="text-zinc-800 dark:text-zinc-100 text-base">{m.text}</span>
+              </div>
             ))}
             <div ref={chatEndRef} />
           </div>
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-2 mb-3">
             <button
               onClick={handlePause}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black px-3 py-1 rounded font-semibold"
+              className="bg-yellow-400 hover:bg-yellow-500 text-zinc-900 px-4 py-2 rounded-lg font-semibold shadow transition-all"
               type="button"
             >
               {isPaused ? 'Resume TTS' : 'Pause TTS'}
             </button>
             <button
               onClick={handlePlay}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded font-semibold"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold shadow transition-all"
               type="button"
             >
               Play Summary
@@ -509,29 +487,35 @@ export default function Home() {
               type="text"
               placeholder="Type a note..."
               value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              className="p-2 border border-gray-700 bg-zinc-800 text-white rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400"
-              onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
+              onChange={e => setChatInput(e.target.value)}
+              className="p-3 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-xl flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder-zinc-400 text-base transition-all"
+              onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
             />
             <button
               onClick={sendMessage}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold shadow transition-all text-base"
               disabled={!chatInput.trim()}
             >
               Add Note
             </button>
           </div>
-        </div>
+        </section>
       )}
 
-      <div className="mt-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold">Participants</h2>
-        <ul className="mt-2 list-disc list-inside">
-          {participants.length === 0 && <li>No participants yet</li>}
+      <section className="w-full max-w-2xl mt-8 mb-8 bg-white/70 dark:bg-zinc-800/80 rounded-2xl shadow p-6 border border-zinc-100 dark:border-zinc-800">
+        <h2 className="text-2xl font-bold mb-4 text-indigo-600 dark:text-indigo-300 tracking-tight">Participants</h2>
+        <ul className="flex flex-wrap gap-4">
+          {participants.length === 0 && <li className="text-zinc-400 italic">No participants yet</li>}
           {participants.map((p) => (
-            <li key={p}>{p}</li>
+            <li key={p} className="flex items-center gap-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 rounded-full px-4 py-2 font-semibold shadow-sm text-base">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-400 dark:bg-indigo-700 text-white font-bold text-lg">
+                {p.slice(0,2).toUpperCase()}
+              </span>
+              {p}
+            </li>
           ))}
         </ul>
+      </section>
       </div>
     </main>
   );
